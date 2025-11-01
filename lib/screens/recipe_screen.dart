@@ -1,66 +1,57 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/recipe.dart';
+import '../widgets/recipe_card.dart';
 
-class RecipeScreen extends StatelessWidget {
-  final Recipe recipe;
-  final File? image;
-  final String detectedLabel;
+class RatingScreen extends StatefulWidget {
+  final List<Recipe> recipes;
+  const RatingScreen({super.key, required this.recipes});
 
-  const RecipeScreen({Key? key, required this.recipe, this.image, required this.detectedLabel}) : super(key: key);
+  @override
+  State<RatingScreen> createState() => _RatingScreenState();
+}
+
+class _RatingScreenState extends State<RatingScreen> {
+  String _sortType = 'rating';
+
+  List<Recipe> get sortedRecipes {
+    List<Recipe> sorted = [...widget.recipes];
+    if (_sortType == 'rating') {
+      sorted.sort((a, b) => b.rating.compareTo(a.rating));
+    } else if (_sortType == 'time') {
+      sorted.sort((a, b) => a.time.compareTo(b.time));
+    } else if (_sortType == 'difficulty') {
+      sorted.sort((a, b) => a.difficulty.compareTo(b.difficulty));
+    }
+    return sorted;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(recipe.title),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (image != null)
-              Image.file(image!, width: double.infinity, height: 220, fit: BoxFit.cover),
-            const SizedBox(height: 8),
-            Text('Распознано как: $detectedLabel', style: const TextStyle(fontSize: 14, color: Colors.grey)),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Text('Калории: ${recipe.calories} ккал', style: const TextStyle(fontSize: 16)),
-                const SizedBox(width: 16),
-                Text('Полезность: ${recipe.healthScore}/10', style: const TextStyle(fontSize: 16)),
+      appBar: AppBar(title: const Text('⭐ Рейтинг рецептов')),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: DropdownButton<String>(
+              value: _sortType,
+              items: const [
+                DropdownMenuItem(value: 'rating', child: Text('По рейтингу')),
+                DropdownMenuItem(value: 'time', child: Text('По времени')),
+                DropdownMenuItem(
+                    value: 'difficulty', child: Text('По сложности')),
               ],
+              onChanged: (v) => setState(() => _sortType = v!),
             ),
-            const SizedBox(height: 16),
-            const Text('Ингредиенты', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            ...recipe.ingredients.map((i) => ListTile(
-              dense: true,
-              leading: const Icon(Icons.check_box_outlined),
-              title: Text(i),
-            )),
-            const SizedBox(height: 12),
-            const Text('Шаги', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            ...recipe.steps.asMap().entries.map((e) {
-              final idx = e.key + 1;
-              final step = e.value;
-              return ListTile(
-                leading: CircleAvatar(child: Text('$idx')),
-                title: Text(step),
-              );
-            }),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                // Тут можно добавить: сохранить в Firebase, начать пошаговую подготовку с таймерами и т.д.
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Сохранено в избранные (демо)')));
-              },
-              child: const Text('Сохранить рецепт'),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: sortedRecipes.length,
+              itemBuilder: (context, i) =>
+                  RecipeCard(recipe: sortedRecipes[i]),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

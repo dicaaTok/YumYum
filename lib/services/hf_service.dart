@@ -4,12 +4,13 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class HuggingFaceService {
-  final String _model = 'nateraw/food'; // модель для распознавания еды
+  static const _model = 'nateraw/food'; // Модель распознавания еды
 
-  Future<String> recognizeFood(File imageFile) async {
-    final token = dotenv.env['HUGGINGFACE_API_TOKEN'];
-    if (token == null || token.isEmpty) {
-      throw Exception('Hugging Face token not set in .env');
+  /// 🧠 Распознаёт блюдо по изображению (File)
+  static Future<String> recognizeFood(File imageFile) async {
+    final hfToken = dotenv.env['HUGGINGFACE_API_TOKEN'];
+    if (hfToken == null || hfToken.isEmpty) {
+      throw Exception('HUGGINGFACE_API_TOKEN не задан в .env');
     }
 
     final url = Uri.parse('https://api-inference.huggingface.co/models/$_model');
@@ -18,24 +19,24 @@ class HuggingFaceService {
     final response = await http.post(
       url,
       headers: {
-        'Authorization': 'Bearer $token',
+        'Authorization': 'Bearer $hfToken',
         'Content-Type': 'application/octet-stream',
       },
       body: bytes,
     );
 
     if (response.statusCode == 200) {
-      // Ожидаем список предсказаний [{label:, score:}, ...]
-      final dynamic parsed = json.decode(utf8.decode(response.bodyBytes));
-      if (parsed is List && parsed.isNotEmpty) {
-        // Возьмём лучшую метку
-        final label = parsed[0]['label'] ?? 'unknown';
-        return label.toString();
+      final result = json.decode(utf8.decode(response.bodyBytes));
+
+      if (result is List && result.isNotEmpty && result[0]['label'] != null) {
+        return result[0]['label'];
       } else {
-        return 'Не распознано';
+        return 'Не удалось распознать блюдо 😕';
       }
     } else {
-      throw Exception('HuggingFace API error: ${response.statusCode} ${response.body}');
+      throw Exception(
+        'Ошибка HuggingFace (${response.statusCode}): ${response.body}',
+      );
     }
   }
 }
