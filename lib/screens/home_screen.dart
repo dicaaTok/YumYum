@@ -1,15 +1,16 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:yum_yum/screens/recipe_screen.dart';
-import 'analyze_dish_screen.dart';
 import '../services/hf_service.dart';
 import '../services/ai_service.dart';
+import '../services/recipe_storage_service.dart';
+import '../models/user_recipe.dart';
 import '../widgets/recipe_card.dart';
 import 'ingredients_screen.dart';
 import 'add_recipe_screen.dart';
 import 'my_recipes_screen.dart';
-import '../widgets/text_recipe_card.dart';
+import 'analyze_dish_screen.dart';
+import 'rating_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -36,10 +37,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
       _image = File(picked.path);
 
-      final label = await HuggingFaceService.recognizeFood(_image!);
+      final label = await HFService.recognizeFood(_image!);
       _recognizedDish = label;
 
       _recipe = await AIService.getRecipeFromOpenAI(label);
+
+      // Сохраняем в Hive
+      final newRecipe = UserRecipe(
+        title: _recognizedDish ?? 'Без названия',
+        description: _recipe ?? '',
+        ingredients: ['Не указано'],
+        steps: ['Шаги не распознаны'],
+      );
+
+      await RecipeStorageService.addRecipe(newRecipe);
     } catch (e) {
       _recipe = 'Ошибка: $e';
     }
@@ -118,6 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
+              const SizedBox(height: 12),
               ElevatedButton.icon(
                 icon: const Icon(Icons.star),
                 label: const Text('Рейтинг рецептов'),
@@ -125,12 +137,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => RatingScreen(recipes: []), // сюда подставим список
-                    ),
+                        builder: (_) => RatingScreen(recipes: [])),
                   );
                 },
               ),
-
               const SizedBox(height: 24),
               if (_recognizedDish != null)
                 Text(
@@ -142,7 +152,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   textAlign: TextAlign.center,
                 ),
               const SizedBox(height: 16),
-              if (_recipe != null) TextRecipeCard(recipeText: _recipe!),
+              if (_recipe != null)
+                Card(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                  elevation: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      _recipe!,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
