@@ -5,7 +5,9 @@ import '../services/hf_service.dart';
 import '../services/ai_service.dart';
 import '../services/recipe_storage_service.dart';
 import '../models/user_recipe.dart';
+import '../models/recipe.dart';
 import '../widgets/recipe_card.dart';
+
 import 'ingredients_screen.dart';
 import 'add_recipe_screen.dart';
 import 'my_recipes_screen.dart';
@@ -22,8 +24,21 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   File? _image;
   String? _recognizedDish;
-  String? _recipe;
+  String _search = "";
   bool _loading = false;
+
+  List<UserRecipe> _allRecipes = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecipes();
+  }
+
+  Future<void> _loadRecipes() async {
+    final recipes = RecipeStorageService.getAllRecipes();
+    setState(() => _allRecipes = recipes);
+  }
 
   Future<void> _pickAndAnalyzeImage() async {
     setState(() => _loading = true);
@@ -40,19 +55,19 @@ class _HomeScreenState extends State<HomeScreen> {
       final label = await HFService.recognizeFood(_image!);
       _recognizedDish = label;
 
-      _recipe = await AIService.getRecipeFromOpenAI(label);
+      final recipeText = await AIService.getRecipeFromOpenAI(label);
 
-      // Сохраняем в Hive
       final newRecipe = UserRecipe(
         title: _recognizedDish ?? 'Без названия',
-        description: _recipe ?? '',
+        description: recipeText ?? '',
         ingredients: ['Не указано'],
         steps: ['Шаги не распознаны'],
       );
 
       await RecipeStorageService.addRecipe(newRecipe);
+      _loadRecipes();
     } catch (e) {
-      _recipe = 'Ошибка: $e';
+      print("Ошибка распознавания: $e");
     }
 
     setState(() => _loading = false);
@@ -60,115 +75,106 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final filtered = _allRecipes
+        .where((r) => r.title.toLowerCase().contains(_search.toLowerCase()))
+        .toList();
+
     return Scaffold(
-      appBar: AppBar(title: const Text('🍳 Книжка рецептов с ИИ')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_image != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.file(_image!, height: 200),
-                ),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.camera_alt),
-                label: const Text('Сфотографировать блюдо'),
-                onPressed: _pickAndAnalyzeImage,
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.kitchen),
-                label: const Text('Что приготовить из моих продуктов'),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const IngredientsScreen()),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.health_and_safety),
-                label: const Text('Анализ полезности блюда'),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const AnalyzeDishScreen()),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Добавить свой рецепт'),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const AddRecipeScreen()),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.book),
-                label: const Text('Мои рецепты'),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const MyRecipesScreen()),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.star),
-                label: const Text('Рейтинг рецептов'),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => RatingScreen(recipes: [])),
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-              if (_recognizedDish != null)
-                Text(
-                  'Распознано: $_recognizedDish',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              const SizedBox(height: 16),
-              if (_recipe != null)
-                Card(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                  elevation: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 10),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      _recipe!,
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ),
-            ],
+      appBar: AppBar(
+        title: const Text("🍳 YumYum — Книжка рецептов"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.camera_alt_outlined),
+            onPressed: _pickAndAnalyzeImage,
           ),
-        ),
+
+          PopupMenuButton(
+            icon: const Icon(Icons.more_vert),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                child: const Text("🧺 Что приготовить из продуктов"),
+                onTap: () => Future.delayed(
+                    const Duration(milliseconds: 100),
+                        () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const IngredientsScreen()))),
+              ),
+              PopupMenuItem(
+                child: const Text("❤️ Анализ полезности блюда"),
+                onTap: () => Future.delayed(
+                    const Duration(milliseconds: 100),
+                        () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const AnalyzeDishScreen()))),
+              ),
+              PopupMenuItem(
+                child: const Text("➕ Добавить рецепт"),
+                onTap: () => Future.delayed(
+                    const Duration(milliseconds: 100),
+                        () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const AddRecipeScreen()))),
+              ),
+              PopupMenuItem(
+                child: const Text("📘 Мои рецепты"),
+                onTap: () => Future.delayed(
+                    const Duration(milliseconds: 100),
+                        () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const MyRecipesScreen()))),
+              ),
+              PopupMenuItem(
+                child: const Text("⭐ Рейтинг рецептов"),
+                onTap: () {
+                  final converted = _allRecipes.map((u) => u.toRecipe()).toList();
+
+                  Future.delayed(
+                      const Duration(milliseconds: 100),
+                          () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => RatingScreen(recipes: converted))));
+                },
+              ),
+            ],
+          )
+        ],
+      ),
+
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: "Поиск блюда...",
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.grey.shade200,
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none),
+              ),
+              onChanged: (v) => setState(() => _search = v),
+            ),
+          ),
+
+          if (_loading)
+            const Expanded(child: Center(child: CircularProgressIndicator()))
+          else
+            Expanded(
+              child: filtered.isEmpty
+                  ? const Center(
+                child: Text("Нет рецептов", style: TextStyle(fontSize: 18)),
+              )
+                  : ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: filtered.length,
+                itemBuilder: (context, i) {
+                  final u = filtered[i];
+                  final recipe = u.toRecipe();
+
+                  return RecipeCard(recipe: recipe);
+                },
+              ),
+            ),
+        ],
       ),
     );
   }

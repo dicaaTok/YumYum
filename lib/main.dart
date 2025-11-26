@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:yum_yum/theme/theme.dart';
 import 'models/user_recipe.dart';
+import 'theme/app_theme.dart' hide AppTheme;
 import 'screens/home_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
 
   // ✅ Загружаем .env перед любыми зависимостями
   await dotenv.load(fileName: ".env");
@@ -26,9 +29,7 @@ class YumYumApp extends StatelessWidget {
     return MaterialApp(
       title: 'YumYum 🍳',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.orange,
-      ),
+      theme: AppTheme.lightTheme,
       home: const HomeScreen(),
     );
   }

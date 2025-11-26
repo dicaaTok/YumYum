@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'package:yum_yum/models/recipe.dart';
 
 part 'user_recipe.g.dart';
 
@@ -26,4 +27,18 @@ class UserRecipe extends HiveObject {
     required this.steps,
     this.rating = 0.0,
   });
+
+}
+extension UserRecipeMapper on UserRecipe {
+  Recipe toRecipe() {
+    return Recipe(
+      title: title,
+      description: description,
+      ingredients: ingredients.join(', '), // List → String
+      steps: steps.join('\n'), // List → String
+      time: 10, // У UserRecipe нет времени → ставим любое значение
+      difficulty: 'Не указано', // У UserRecipe нет сложности
+      rating: rating,
+    );
+  }
 }
