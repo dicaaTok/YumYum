@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:yum_yum/screens/main_screen.dart';
 import 'package:yum_yum/theme/theme.dart';
 import 'models/user_recipe.dart';
 import 'theme/app_theme.dart' hide AppTheme;
@@ -30,7 +31,7 @@ class YumYumApp extends StatelessWidget {
       title: 'YumYum 🍳',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const HomeScreen(),
+      home: const MainScreen(),
     );
   }
 }

@@ -1,12 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+
+import '../models/user_recipe.dart';
+import '../widgets/recipe_card.dart';
+
 import '../services/hf_service.dart';
 import '../services/ai_service.dart';
 import '../services/recipe_storage_service.dart';
-import '../models/user_recipe.dart';
-import '../models/recipe.dart';
-import '../widgets/recipe_card.dart';
 
 import 'ingredients_screen.dart';
 import 'add_recipe_screen.dart';
@@ -24,9 +25,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   File? _image;
   String? _recognizedDish;
-  String _search = "";
   bool _loading = false;
 
+  String _search = "";
   List<UserRecipe> _allRecipes = [];
 
   @override
@@ -58,16 +59,17 @@ class _HomeScreenState extends State<HomeScreen> {
       final recipeText = await AIService.getRecipeFromOpenAI(label);
 
       final newRecipe = UserRecipe(
-        title: _recognizedDish ?? 'Без названия',
-        description: recipeText ?? '',
-        ingredients: ['Не указано'],
-        steps: ['Шаги не распознаны'],
+        title: _recognizedDish ?? "Без названия",
+        description: recipeText ?? "",
+        ingredients: ["нет данных"],
+        steps: ["нет данных"],
       );
 
       await RecipeStorageService.addRecipe(newRecipe);
       _loadRecipes();
+
     } catch (e) {
-      print("Ошибка распознавания: $e");
+      print("Ошибка: $e");
     }
 
     setState(() => _loading = false);
@@ -81,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("🍳 YumYum — Книжка рецептов"),
+        title: const Text("🍳 YumYum"),
         actions: [
           IconButton(
             icon: const Icon(Icons.camera_alt_outlined),
@@ -93,43 +95,65 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context) => [
               PopupMenuItem(
                 child: const Text("🧺 Что приготовить из продуктов"),
-                onTap: () => Future.delayed(
-                    const Duration(milliseconds: 100),
-                        () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const IngredientsScreen()))),
-              ),
-              PopupMenuItem(
-                child: const Text("❤️ Анализ полезности блюда"),
-                onTap: () => Future.delayed(
-                    const Duration(milliseconds: 100),
-                        () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const AnalyzeDishScreen()))),
-              ),
-              PopupMenuItem(
-                child: const Text("➕ Добавить рецепт"),
-                onTap: () => Future.delayed(
-                    const Duration(milliseconds: 100),
-                        () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const AddRecipeScreen()))),
-              ),
-              PopupMenuItem(
-                child: const Text("📘 Мои рецепты"),
-                onTap: () => Future.delayed(
-                    const Duration(milliseconds: 100),
-                        () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const MyRecipesScreen()))),
-              ),
-              PopupMenuItem(
-                child: const Text("⭐ Рейтинг рецептов"),
                 onTap: () {
-                  final converted = _allRecipes.map((u) => u.toRecipe()).toList();
-
                   Future.delayed(
                       const Duration(milliseconds: 100),
                           () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => RatingScreen(recipes: converted))));
+                              builder: (_) => const IngredientsScreen())));
+                },
+              ),
+
+              PopupMenuItem(
+                child: const Text("❤️ Анализ блюда"),
+                onTap: () {
+                  Future.delayed(
+                      const Duration(milliseconds: 100),
+                          () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const AnalyzeDishScreen())));
+                },
+              ),
+
+              PopupMenuItem(
+                child: const Text("➕ Добавить рецепт"),
+                onTap: () {
+                  Future.delayed(
+                      const Duration(milliseconds: 100),
+                          () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const AddRecipeScreen())));
+                },
+              ),
+
+              PopupMenuItem(
+                child: const Text("📘 Мои рецепты"),
+                onTap: () {
+                  Future.delayed(
+                      const Duration(milliseconds: 100),
+                          () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const MyRecipesScreen())));
+                },
+              ),
+
+              PopupMenuItem(
+                child: const Text("⭐ Рейтинг рецептов"),
+                onTap: () {
+                  Future.delayed(
+                      const Duration(milliseconds: 100),
+                          () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => RatingScreen(
+                                recipes: _allRecipes
+                                    .map((u) => u.toRecipe())
+                                    .toList(),
+                              ))));
                 },
               ),
             ],
@@ -160,20 +184,16 @@ class _HomeScreenState extends State<HomeScreen> {
           else
             Expanded(
               child: filtered.isEmpty
-                  ? const Center(
-                child: Text("Нет рецептов", style: TextStyle(fontSize: 18)),
-              )
+                  ? const Center(child: Text("Нет рецептов"))
                   : ListView.builder(
                 padding: const EdgeInsets.all(12),
                 itemCount: filtered.length,
                 itemBuilder: (context, i) {
-                  final u = filtered[i];
-                  final recipe = u.toRecipe();
-
-                  return RecipeCard(recipe: recipe);
+                  final recipe = filtered[i];
+                  return RecipeCard(recipe: recipe.toRecipe());
                 },
               ),
-            ),
+            )
         ],
       ),
     );
