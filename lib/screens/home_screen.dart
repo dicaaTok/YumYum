@@ -1,15 +1,16 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../data/food_database.dart';
 import '../models/user_recipe.dart';
-import '../widgets/recipe_card.dart';
+import '../widgets/recipe_card_image.dart';
 
 import '../services/hf_service.dart';
 import '../services/ai_service.dart';
 import '../services/recipe_storage_service.dart';
 
-import '../widgets/recipe_card_image.dart';
 import 'ingredients_screen.dart';
 import 'add_recipe_screen.dart';
 import 'my_recipes_screen.dart';
@@ -29,17 +30,21 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _loading = false;
 
   String _search = "";
-  List<UserRecipe> _allRecipes = [];
+  List<String> randomFood = [];
+  List<String> searchResults = [];
+
+  final random = Random();
 
   @override
   void initState() {
     super.initState();
-    _loadRecipes();
-  }
 
-  Future<void> _loadRecipes() async {
-    final recipes = RecipeStorageService.getAllRecipes();
-    setState(() => _allRecipes = recipes);
+    /// создаём ленту со случайными блюдами
+    randomFood = List.of(foodDatabase)..shuffle(random);
+    randomFood = randomFood.take(30).toList();
+
+    /// Поиск начинает отображать всю базу
+    searchResults = List.of(foodDatabase);
   }
 
   Future<void> _pickAndAnalyzeImage() async {
@@ -67,7 +72,6 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
       await RecipeStorageService.addRecipe(newRecipe);
-      _loadRecipes();
 
     } catch (e) {
       print("Ошибка: $e");
@@ -76,11 +80,25 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _loading = false);
   }
 
+  void _searchFood(String query) {
+    setState(() {
+      _search = query.trim();
+
+      if (_search.isEmpty) {
+        searchResults = List.of(foodDatabase);
+      } else {
+        searchResults = foodDatabase
+            .where((food) =>
+            food.toLowerCase().contains(_search.toLowerCase()))
+            .toList();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final filtered = _allRecipes
-        .where((r) => r.title.toLowerCase().contains(_search.toLowerCase()))
-        .toList();
+    final listToShow =
+    _search.isEmpty ? randomFood : searchResults;
 
     return Scaffold(
       appBar: AppBar(
@@ -98,11 +116,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: const Text("🧺 Что приготовить из продуктов"),
                 onTap: () {
                   Future.delayed(
-                      const Duration(milliseconds: 100),
-                          () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const IngredientsScreen())));
+                    const Duration(milliseconds: 100),
+                        () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const IngredientsScreen(),
+                      ),
+                    ),
+                  );
                 },
               ),
 
@@ -110,11 +131,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: const Text("❤️ Анализ блюда"),
                 onTap: () {
                   Future.delayed(
-                      const Duration(milliseconds: 100),
-                          () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const AnalyzeDishScreen())));
+                    const Duration(milliseconds: 100),
+                        () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AnalyzeDishScreen(),
+                      ),
+                    ),
+                  );
                 },
               ),
 
@@ -122,11 +146,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: const Text("➕ Добавить рецепт"),
                 onTap: () {
                   Future.delayed(
-                      const Duration(milliseconds: 100),
-                          () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const AddRecipeScreen())));
+                    const Duration(milliseconds: 100),
+                        () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AddRecipeScreen(),
+                      ),
+                    ),
+                  );
                 },
               ),
 
@@ -134,11 +161,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: const Text("📘 Мои рецепты"),
                 onTap: () {
                   Future.delayed(
-                      const Duration(milliseconds: 100),
-                          () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const MyRecipesScreen())));
+                    const Duration(milliseconds: 100),
+                        () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const MyRecipesScreen(),
+                      ),
+                    ),
+                  );
                 },
               ),
 
@@ -146,15 +176,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: const Text("⭐ Рейтинг рецептов"),
                 onTap: () {
                   Future.delayed(
-                      const Duration(milliseconds: 100),
-                          () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => RatingScreen(
-                                recipes: _allRecipes
-                                    .map((u) => u.toRecipe())
-                                    .toList(),
-                              ))));
+                    const Duration(milliseconds: 100),
+                        () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RatingScreen(
+                          recipes: RecipeStorageService.getAllRecipes()
+                              .map((u) => u.toRecipe())
+                              .toList(),
+                        ),
+                      ),
+                    ),
+                  );
                 },
               ),
             ],
@@ -173,28 +206,38 @@ class _HomeScreenState extends State<HomeScreen> {
                 filled: true,
                 fillColor: Colors.grey.shade200,
                 border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
               ),
-              onChanged: (v) => setState(() => _search = v),
+              onChanged: _searchFood,
             ),
           ),
 
           if (_loading)
-            const Expanded(child: Center(child: CircularProgressIndicator()))
+            const Expanded(
+              child: Center(child: CircularProgressIndicator()),
+            )
           else
             Expanded(
-              child: filtered.isEmpty
-                  ? const Center(child: Text("Нет рецептов"))
-                  : ListView.builder(
+              child: ListView.builder(
                 padding: const EdgeInsets.all(12),
-                itemCount: filtered.length,
-                itemBuilder: (context, i) {
-                  final userRecipe = filtered[i];
-                  return RecipeCardImage(recipe: userRecipe);
+                itemCount: listToShow.length,
+                itemBuilder: (context, index) {
+                  final dish = listToShow[index];
+
+                  return RecipeCardImage(
+                    recipe: UserRecipe(
+                      title: dish,
+                      description: "",
+                      ingredients: [],
+                      steps: [],
+                      rating: 0,
+                    ),
+                  );
                 },
               ),
-            )
+            ),
         ],
       ),
     );
