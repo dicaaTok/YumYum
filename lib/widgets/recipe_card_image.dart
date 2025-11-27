@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/user_recipe.dart';
+import '../screens/recipe_detail_screen.dart';
 
 class RecipeCardImage extends StatelessWidget {
   final UserRecipe recipe;
@@ -13,8 +14,17 @@ class RecipeCardImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageUrl =
         "https://source.unsplash.com/featured/?${Uri.encodeComponent(recipe.title)}";
+    return InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => RecipeDetailScreen(recipe: recipe),
+            ),
+          );
+        },
 
-    return Card(
+      child: Card(
       elevation: 3,
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -78,6 +88,7 @@ class RecipeCardImage extends StatelessWidget {
           ),
         ],
       ),
+      )
     );
   }
 }
