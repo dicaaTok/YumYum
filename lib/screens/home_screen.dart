@@ -9,6 +9,7 @@ import '../services/hf_service.dart';
 import '../services/ai_service.dart';
 import '../services/recipe_storage_service.dart';
 
+import '../widgets/recipe_card_image.dart';
 import 'ingredients_screen.dart';
 import 'add_recipe_screen.dart';
 import 'my_recipes_screen.dart';
@@ -189,8 +190,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.all(12),
                 itemCount: filtered.length,
                 itemBuilder: (context, i) {
-                  final recipe = filtered[i];
-                  return RecipeCard(recipe: recipe.toRecipe());
+                  final userRecipe = filtered[i];
+                  return RecipeCardImage(recipe: userRecipe);
                 },
               ),
             )

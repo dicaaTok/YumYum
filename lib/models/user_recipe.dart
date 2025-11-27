@@ -20,6 +20,9 @@ class UserRecipe extends HiveObject {
   @HiveField(4)
   double rating;
 
+  @HiveField(5)
+  String? imagePath;
+
   UserRecipe({
     required this.title,
     required this.description,
