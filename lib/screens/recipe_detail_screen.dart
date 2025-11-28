@@ -82,10 +82,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final r = widget.recipe;
-    final imageUrl = r.imageUrl.isNotEmpty
-        ? r.imageUrl
+    final imageUrl = r.imagePath!.isNotEmpty
+        ? r.imagePath
         : "https://source.unsplash.com/featured/?${Uri.encodeComponent(r.title)}";
 
+    var imagePath;
     return Scaffold(
       appBar: AppBar(title: Text(r.title)),
       body: SafeArea(
@@ -94,7 +95,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             // image + title block
             ClipRRect(
               borderRadius: BorderRadius.zero,
-              child: Image.network(imageUrl, height: 200, width: double.infinity, fit: BoxFit.cover,
+              child: Image.network(imagePath!, height: 200, width: double.infinity, fit: BoxFit.cover,
                 errorBuilder: (c,e,s) => Container(height:200, color: Colors.grey.shade300, child: const Center(child: Icon(Icons.fastfood))),),
             ),
             Padding(

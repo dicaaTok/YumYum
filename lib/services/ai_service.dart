@@ -1,180 +1,247 @@
-// lib/services/ai_service.dart
 import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-import '../models/user_recipe.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../models/suggested_recipe.dart';
 
 class AIService {
-  static final String? _openaiKey = dotenv.env["OPENAI_API_KEY"];
-  static final String? _openaiModel = dotenv.env["OPENAI_MODEL"] ?? "gpt-4o-mini";
+  static const _endpoint = 'https://api.openai.com/v1/chat/completions';
+  static const _model = 'gpt-4o-mini';
 
-  static final String? _hfKey = dotenv.env["HUGGINGFACE_API_KEY"];
-  static final String? _hfModel = dotenv.env["HUGGINGFACE_MODEL"] ?? "google/vit-base-patch16-224";
+  /// 🍳 Генерация рецепта по названию блюда
+  static Future<String> getRecipeFromOpenAI(String dishName) async {
+    final apiKey = dotenv.env['OPENAI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('OPENAI_API_KEY не задан в .env');
+    }
 
-  // ==========================================================
-  // 1) 🔥 STAY — СТАРЫЕ ФУНКЦИИ (из твоего GitHub)
-  // ==========================================================
+    final body = json.encode({
+      'model': _model,
+      'messages': [
+        {
+          'role': 'system',
+          'content': 'Ты — умный и дружелюбный кулинарный помощник.'
+        },
+        {
+          'role': 'user',
+          'content':
+          'Как приготовить "$dishName"? Укажи ингредиенты, шаги, калорийность и полезность блюда.'
+        }
+      ],
+      'max_tokens': 700,
+      'temperature': 0.6,
+    });
 
-  /// HuggingFace CLASSIFICATION
-  static Future<String> classifyImage(List<int> imageBytes) async {
-    final url = Uri.parse("https://api-inference.huggingface.co/models/$_hfModel");
-
-    final response = await http.post(
-      url,
+    final res = await http.post(
+      Uri.parse(_endpoint),
       headers: {
-        "Authorization": "Bearer $_hfKey",
-        "Content-Type": "application/octet-stream",
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $apiKey',
       },
-      body: imageBytes,
+      body: body,
     );
 
-    if (response.statusCode != 200) {
-      throw Exception("HF Error: ${response.statusCode} — ${response.body}");
+    if (res.statusCode != 200) {
+      throw Exception('OpenAI API error: ${res.statusCode} ${res.body}');
     }
 
-    final data = jsonDecode(response.body);
+    final map = json.decode(res.body);
+    final content = map['choices']?[0]?['message']?['content'];
+    if (content == null || content.isEmpty) {
+      throw Exception('Пустой ответ от OpenAI');
+    }
+
+    return content.trim();
+  }
+
+  /// 📊 Анализ состава и полезности блюда
+  static Future<Map<String, dynamic>> analyzeDish(String dishDescription) async {
+    final apiKey = dotenv.env['OPENAI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('OPENAI_API_KEY не задан в .env');
+    }
+
+    final body = json.encode({
+      'model': _model,
+      'messages': [
+        {
+          'role': 'system',
+          'content':
+          'Ты — эксперт по питанию. Анализируй блюда и возвращай JSON с калориями, белками, жирами, углеводами и оценкой полезности.'
+        },
+        {
+          'role': 'user',
+          'content':
+          'Проанализируй блюдо: $dishDescription. Верни JSON: {"calories": число, "proteins": число, "fats": число, "carbs": число, "healthScore": число от 0 до 10, "advice": "совет"}'
+        }
+      ],
+      'max_tokens': 400,
+    });
+
+    final res = await http.post(
+      Uri.parse(_endpoint),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $apiKey',
+      },
+      body: body,
+    );
+
+    if (res.statusCode != 200) {
+      throw Exception('OpenAI API error: ${res.statusCode} ${res.body}');
+    }
+
+    final map = json.decode(res.body);
+    final content = map['choices']?[0]?['message']?['content'];
+    if (content == null || content.isEmpty) {
+      throw Exception('Пустой ответ от OpenAI');
+    }
+
     try {
-      return data[0][0]["label"]; // top label
+      return Map<String, dynamic>.from(json.decode(content));
     } catch (_) {
-      return "unknown";
+      return {'advice': content};
     }
   }
 
-  /// Генерация рецепта по ингредиентам
-  static Future<String> generateRecipeFromIngredients(String ingredients) async {
-    final url = Uri.parse("https://api.openai.com/v1/chat/completions");
+  /// 🍽️ Подбор рецептов по ингредиентам
+  static Future<List<SuggestedRecipe>> getRecipesByIngredients({
+    required List<String> ingredients,
+    String equipment = '',
+    int maxSuggestions = 4,
+  }) async {
+    final apiKey = dotenv.env['OPENAI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('OPENAI_API_KEY не задан в .env');
+    }
 
-    final body = jsonEncode({
-      "model": _openaiModel,
-      "messages": [
-        {"role": "system", "content": "Create recipes from ingredients."},
-        {"role": "user", "content": "Create a recipe using: $ingredients"}
+    final prompt = '''
+Пользователь указал ингредиенты: ${ingredients.join(', ')}.
+Предложи до $maxSuggestions блюд в JSON-формате:
+[
+  {
+    "title": "",
+    "shortDescription": "",
+    "ingredients": [],
+    "steps": [],
+    "calories": 0,
+    "difficulty": "easy|medium|hard",
+    "cookTimeMinutes": 0
+  }
+]
+''' ;
+
+    final body = json.encode({
+      'model': _model,
+      'messages': [
+        {'role': 'system', 'content': 'Ты — кулинарный ассистент, возвращай только JSON.'},
+        {'role': 'user', 'content': prompt},
       ],
-      "temperature": 0.7,
+      'max_tokens': 800,
+      'temperature': 0.4,
     });
 
-    final resp = await http.post(url,
-        headers: {
-          "Authorization": "Bearer $_openaiKey",
-          "Content-Type": "application/json"
-        },
-        body: body);
+    final res = await http.post(
+      Uri.parse(_endpoint),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $apiKey',
+      },
+      body: body,
+    );
 
-    final json = jsonDecode(resp.body);
-    return json["choices"][0]["message"]["content"];
+    if (res.statusCode != 200) {
+      throw Exception('Ошибка OpenAI: ${res.statusCode} ${res.body}');
+    }
+
+    final map = json.decode(res.body);
+    final content = map['choices']?[0]?['message']?['content'];
+    if (content == null || content.isEmpty) {
+      throw Exception('Пустой ответ от OpenAI');
+    }
+
+    final jsonString = _extractJson(content);
+    final parsed = json.decode(jsonString);
+
+    if (parsed is List) {
+      return parsed.map((e) => SuggestedRecipe.fromMap(e)).toList();
+    } else {
+      throw Exception('Неверная структура JSON от OpenAI');
+    }
   }
-
-  /// Анализ блюда
-  static Future<String> analyzeDish(String text) async {
-    final url = Uri.parse("https://api.openai.com/v1/chat/completions");
-
-    final body = jsonEncode({
-      "model": _openaiModel,
-      "messages": [
-        {"role": "system", "content": "Analyze dishes."},
-        {"role": "user", "content": text}
-      ],
-    });
-
-    final resp = await http.post(url,
-        headers: {
-          "Authorization": "Bearer $_openaiKey",
-          "Content-Type": "application/json"
-        },
-        body: body);
-
-    final json = jsonDecode(resp.body);
-    return json["choices"][0]["message"]["content"];
-  }
-
-  // ==========================================================
-  // 2) 🔥 NEW — НОВАЯ ФУНКЦИЯ: ЧАТ ДЛЯ СТРАНИЦЫ РЕЦЕПТА
-  // ==========================================================
-
-  /// Новый умный чат по рецепту 💬🍳
-  /// + контекст рецепта
-  /// + label от HuggingFace
-  /// + время / сложность / рейтинг
-  static Future<String> askRecipeChat({
-    required UserRecipe recipe,
+  /// 💬 Ответы на вопросы по конкретному рецепту
+  static Future<String> askRecipeQuestion({
+    required dynamic recipe,
     required String question,
   }) async {
-    if (_openaiKey == null) {
-      throw Exception("OPENAI_API_KEY not found in .env");
+    final apiKey = dotenv.env['OPENAI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('OPENAI_API_KEY не задан в .env');
     }
 
-    // -----------------------------
-    // 1) Распознаем фото (если есть URL)
-    // -----------------------------
-    String imageLabel = "none";
-
-    if (recipe.imageUrl.isNotEmpty) {
-      try {
-        final img = await http.get(Uri.parse(recipe.imageUrl));
-        if (img.statusCode == 200) {
-          imageLabel = await classifyImage(img.bodyBytes);
-        }
-      } catch (_) {
-        imageLabel = "unrecognized";
-      }
-    }
-
-    // -----------------------------
-    // 2) Формируем системный промпт
-    // -----------------------------
-    final system = """
-Ты — умный повар-ассистент. Помогаешь пользователю готовить блюда.
-
-Вот информация о рецепте:
-
+    final recipeContext = '''
 Название: ${recipe.title}
 Описание: ${recipe.description}
-
-Ингредиенты:
-${recipe.ingredients.join(", ")}
-
-Шаги:
-${recipe.steps.join("\n")}
-
+Ингредиенты: ${recipe.ingredients.join(", ")}
+Шаги приготовления: ${recipe.steps.join(". ")}
 Время приготовления: ${recipe.time} минут
 Сложность: ${recipe.difficulty}
-Рейтинг: ${recipe.rating}
+''';
 
-AI-распознавание фото: $imageLabel
-
-Отвечай дружелюбно, чётко, коротко, но по делу.
-Если могут быть опасности — предупреди.
-""";
-
-    // -----------------------------
-    // 3) Отправляем запрос к OpenAI
-    // -----------------------------
-    final url = Uri.parse("https://api.openai.com/v1/chat/completions");
-
-    final payload = jsonEncode({
-      "model": _openaiModel,
-      "messages": [
-        {"role": "system", "content": system},
-        {"role": "user", "content": question}
+    final body = json.encode({
+      'model': _model,
+      'messages': [
+        {
+          'role': 'system',
+          'content': '''
+Ты — умный ИИ-повар. Ты отвечаешь на вопросы пользователя строго в контексте рецепта.
+Делай ответы короткими, понятными, с конкретными советами.
+          '''
+        },
+        {
+          'role': 'user',
+          'content':
+          'Вот данные рецепта:\n$recipeContext\n\nВопрос: $question'
+        }
       ],
-      "temperature": 0.7,
-      "max_tokens": 350,
+      'max_tokens': 500,
+      'temperature': 0.5,
     });
 
-    final resp = await http.post(
-      url,
+    final res = await http.post(
+      Uri.parse(_endpoint),
       headers: {
-        "Authorization": "Bearer $_openaiKey",
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $apiKey',
       },
-      body: payload,
+      body: body,
     );
 
-    if (resp.statusCode != 200) {
-      throw Exception("OpenAI error: ${resp.body}");
+    if (res.statusCode != 200) {
+      throw Exception('OpenAI error: ${res.statusCode}');
     }
 
-    final json = jsonDecode(resp.body);
-    return json["choices"][0]["message"]["content"] ?? "Ошибка: пустой ответ.";
+    final map = json.decode(res.body);
+    final content = map['choices']?[0]?['message']?['content'];
+
+    if (content == null || content.isEmpty) {
+      return "Не смог получить ответ 😕";
+    }
+
+    return content.trim();
+  }
+
+  /// 🧩 Вспомогательная функция — извлечение чистого JSON
+  static String _extractJson(String text) {
+    final start = text.indexOf('[');
+    final end = text.lastIndexOf(']');
+    if (start != -1 && end != -1 && end > start) {
+      return text.substring(start, end + 1);
+    }
+    final startObj = text.indexOf('{');
+    final endObj = text.lastIndexOf('}');
+    if (startObj != -1 && endObj != -1 && endObj > startObj) {
+      return text.substring(startObj, endObj + 1);
+    }
+    return text;
   }
 }

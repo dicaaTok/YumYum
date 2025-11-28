@@ -29,20 +29,21 @@ class UserRecipe extends HiveObject {
     required this.ingredients,
     required this.steps,
     this.rating = 0.0,
+    this.imagePath,
   });
-
 }
+
 extension UserRecipeMapper on UserRecipe {
   Recipe toRecipe() {
     return Recipe(
       title: title,
       description: description,
-      ingredients: ingredients.join(', '), // List → String
-      steps: steps.join('\n'), // List → String
-      time: 10, // У UserRecipe нет времени → ставим любое значение
-      difficulty: 'Не указано', // У UserRecipe нет сложности
+      ingredients: ingredients.join(', '),
+      steps: steps.join('\n'),
+      time: 10,
+      difficulty: 'Не указано',
       rating: rating,
+      imagePath: imagePath, // <- если поле есть в Recipe
     );
   }
 }
-
