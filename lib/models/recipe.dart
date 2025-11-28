@@ -6,6 +6,7 @@ class Recipe {
   final int time; // Время приготовления в минутах
   final String difficulty; // "Легко", "Средне", "Сложно"
   double rating; // Средняя оценка пользователя (1–5)
+  final String? imagePath;
 
   Recipe({
     required this.title,
@@ -15,6 +16,7 @@ class Recipe {
     required this.time,
     required this.difficulty,
     this.rating = 0,
+    this.imagePath,
   });
 
   // Метод для преобразования объекта в Map (если нужно сохранять в JSON)
@@ -27,6 +29,7 @@ class Recipe {
       'time': time,
       'difficulty': difficulty,
       'rating': rating,
+      'imagePath': imagePath,
     };
   }
 
@@ -42,6 +45,7 @@ class Recipe {
       rating: (map['rating'] is double)
           ? map['rating']
           : double.tryParse(map['rating']?.toString() ?? '0') ?? 0,
+      imagePath: map['imagePath'],
     );
   }
 }
