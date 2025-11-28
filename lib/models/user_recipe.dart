@@ -47,3 +47,4 @@ extension UserRecipeMapper on UserRecipe {
     );
   }
 }
+
