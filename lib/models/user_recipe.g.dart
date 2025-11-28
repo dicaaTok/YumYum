@@ -23,13 +23,16 @@ class UserRecipeAdapter extends TypeAdapter<UserRecipe> {
       steps: (fields[3] as List).cast<String>(),
       rating: fields[4] as double,
       imagePath: fields[5] as String?,
+      difficulty: fields[6] as String?,
+      time: fields[7] as String?,
+      imageUrl: fields[8] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserRecipe obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.title)
       ..writeByte(1)
@@ -41,7 +44,13 @@ class UserRecipeAdapter extends TypeAdapter<UserRecipe> {
       ..writeByte(4)
       ..write(obj.rating)
       ..writeByte(5)
-      ..write(obj.imagePath);
+      ..write(obj.imagePath)
+      ..writeByte(6)
+      ..write(obj.difficulty)
+      ..writeByte(7)
+      ..write(obj.time)
+      ..writeByte(8)
+      ..write(obj.imageUrl);
   }
 
   @override

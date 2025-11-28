@@ -36,7 +36,7 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
             description: userRecipe.description,
             ingredients: userRecipe.ingredients.join(', '),
             steps: userRecipe.steps.join('. '),
-            time: 0,
+            time: " ",
             difficulty: 'Не указано',
             rating: userRecipe.rating,
           );

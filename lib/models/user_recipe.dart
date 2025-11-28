@@ -23,6 +23,15 @@ class UserRecipe extends HiveObject {
   @HiveField(5)
   String? imagePath;
 
+  @HiveField(6)
+  String? difficulty;
+
+  @HiveField(7)
+  String? time;
+
+  @HiveField(8)
+  String? imageUrl;
+
   UserRecipe({
     required this.title,
     required this.description,
@@ -30,7 +39,17 @@ class UserRecipe extends HiveObject {
     required this.steps,
     this.rating = 0.0,
     this.imagePath,
+    this.difficulty,
+    this.time,
+    this.imageUrl,
   });
+
+  String get resolvedImage {
+    if (imagePath != null && imagePath!.isNotEmpty) return imagePath!;
+    if (imageUrl != null && imageUrl!.isNotEmpty) return imageUrl!;
+
+    return "https://source.unsplash.com/featured/?${Uri.encodeComponent(title)}";
+  }
 }
 
 extension UserRecipeMapper on UserRecipe {
@@ -40,11 +59,10 @@ extension UserRecipeMapper on UserRecipe {
       description: description,
       ingredients: ingredients.join(', '),
       steps: steps.join('\n'),
-      time: 10,
-      difficulty: 'Не указано',
+      time: time ?? "Не указано",
+      difficulty: difficulty ?? "Не указано",
       rating: rating,
-      imagePath: imagePath, // <- если поле есть в Recipe
+      imagePath: resolvedImage,
     );
   }
 }
-
