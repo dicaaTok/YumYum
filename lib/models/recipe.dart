@@ -1,9 +1,10 @@
 class Recipe {
   final String title;
-  final String description;
   final String ingredients;
   final String steps;
-
+  final String description; // Краткое описание для карточки
+  final String imageUrl; // URL картинки
+  final String instructions; // Полный рецепт приготовления
   /// ⬇️ Исправлено: теперь String, а не int
   final String time;
 
@@ -20,6 +21,8 @@ class Recipe {
     required this.difficulty,
     this.rating = 0,
     this.imagePath,
+    required this.imageUrl,
+    required this.instructions,
   });
 
   Map<String, dynamic> toMap() {
@@ -44,7 +47,7 @@ class Recipe {
       time: map['time']?.toString() ?? 'Не указано',
       difficulty: map['difficulty'] ?? 'Не указано',
       rating: double.tryParse(map['rating']?.toString() ?? '0') ?? 0,
-      imagePath: map['imagePath'],
+      imagePath: map['imagePath'], imageUrl: '', instructions: '',
     );
   }
 }

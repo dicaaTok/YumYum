@@ -62,7 +62,7 @@ extension UserRecipeMapper on UserRecipe {
       time: time ?? "Не указано",
       difficulty: difficulty ?? "Не указано",
       rating: rating,
-      imagePath: resolvedImage,
+      imagePath: resolvedImage, imageUrl: '', instructions: '',
     );
   }
 }

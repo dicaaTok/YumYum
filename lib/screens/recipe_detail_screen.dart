@@ -82,7 +82,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final r = widget.recipe;
-    final imageUrl = r.imagePath!.isNotEmpty
+    final imageUrl = r.imagePath !.isNotEmpty
         ? r.imagePath
         : "https://source.unsplash.com/featured/?${Uri.encodeComponent(r.title)}";
 
