@@ -163,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Duration(milliseconds: 100),
                         () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const MyRecipesScreen()),
+                      MaterialPageRoute(builder: (_) => MyRecipesScreen()),
                     ),
                   );
                 },

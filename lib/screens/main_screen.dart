@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'add_recipe_screen.dart';
+import 'my_goal_screen.dart';
 import 'my_recipes_screen.dart';
 import 'rating_screen.dart';
 
@@ -15,9 +16,10 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _pages = [
     const HomeScreen(),
+     MyGoalScreen(),
     const AddRecipeScreen(),
     const MyRecipesScreen(),
-    RatingScreen(recipes: const []), 
+    RatingScreen(recipes: const []),
   ];
 
   void _onTap(int index) {
@@ -38,6 +40,10 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: 'Главная',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.flag),
+            label: 'Моя цель',
           ),
           NavigationDestination(
             icon: Icon(Icons.add_circle_outline),
