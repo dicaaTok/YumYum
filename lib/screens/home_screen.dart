@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../data/food_database.dart';
 import '../models/user_recipe.dart';
 import '../widgets/recipe_card_image.dart';
 
@@ -226,15 +225,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemBuilder: (context, index) {
                   final dish = listToShow[index];
 
-                  return RecipeCardImage(
-                    recipe: UserRecipe(
-                      title: dish,
-                      description: "",
-                      ingredients: [],
-                      steps: [],
-                      rating: 0,
-                    ),
+                  final recipe = UserRecipe(
+                    title: dish,
+                    description: "Вкусное блюдо: $dish",
+                    ingredients: ["Нет данных"],
+                    steps: ["Нет данных"],
                   );
+
+                  return RecipeCardImage(
+                    recipe: recipe,
+                    title: recipe.title,
+                    imageUrl: "https://source.unsplash.com/featured/?${Uri.encodeComponent(recipe.title)}",
+                  );
+
                 },
               ),
             ),

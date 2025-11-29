@@ -4,27 +4,19 @@ import '../screens/recipe_detail_screen.dart';
 
 class RecipeCardImage extends StatelessWidget {
   final UserRecipe recipe;
+  final String title;
+  final String imageUrl;
 
   const RecipeCardImage({
     super.key,
+    required this.imageUrl,
     required this.recipe,
+    required this.title,
   });
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl =
-        "https://source.unsplash.com/featured/?${Uri.encodeComponent(recipe.title)}";
-    return InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => RecipeDetailScreen(recipe: recipe),
-            ),
-          );
-        },
-
-      child: Card(
+    return Card(
       elevation: 3,
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -38,46 +30,34 @@ class RecipeCardImage extends StatelessWidget {
               height: 180,
               width: double.infinity,
               fit: BoxFit.cover,
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) return child;
-                return const SizedBox(
-                  height: 180,
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              },
-              errorBuilder: (context, error, stack) {
-                return Container(
-                  height: 180,
-                  color: Colors.grey.shade300,
-                  child: const Center(
-                    child: Icon(Icons.fastfood_outlined, size: 48, color: Colors.grey),
-                  ),
-                );
-              },
+              errorBuilder: (_, __, ___) => Container(
+                height: 180,
+                color: Colors.grey.shade300,
+                child: const Icon(Icons.fastfood_outlined, size: 48),
+              ),
             ),
           ),
 
           Padding(
             padding: const EdgeInsets.all(12.0),
-            child: Text(
-              recipe.title,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
+            child: Text(recipe.title,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           ),
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0),
-            child: Text(
-              recipe.description,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+          if (recipe.description.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: Text(
+                recipe.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
 
           const SizedBox(height: 8),
 
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
             child: Row(
               children: [
                 Icon(Icons.star, color: Colors.amber.shade700),
@@ -86,9 +66,10 @@ class RecipeCardImage extends StatelessWidget {
               ],
             ),
           ),
+
+          const SizedBox(height: 12),
         ],
       ),
-      )
     );
   }
 }

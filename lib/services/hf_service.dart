@@ -8,12 +8,14 @@ class HFService {
   static final String _model =
       dotenv.env['HUGGINGFACE_MODEL'] ?? 'google/vit-base-patch16-224';
 
+
   /// Распознаёт блюдо на фото
   static Future<String> recognizeFood(File imageFile) async {
     try {
       if (_apiKey.isEmpty) {
         throw Exception('Hugging Face API ключ не найден в .env');
       }
+
 
       final uri = Uri.parse('https://router.huggingface.co/hf-inference/models/$_model');
       final headers = {
@@ -24,6 +26,7 @@ class HFService {
     final bytes = await imageFile.readAsBytes();
 
       final response = await http.post(uri, headers: headers, body: bytes);
+
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
