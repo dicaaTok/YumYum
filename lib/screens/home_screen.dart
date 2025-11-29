@@ -1,3 +1,4 @@
+// lib/screens/home_screen.dart
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -5,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 
 import '../models/user_recipe.dart';
 import '../widgets/recipe_card_image.dart';
-
 import '../services/hf_service.dart';
 import '../services/ai_service.dart';
 import '../services/recipe_storage_service.dart';
@@ -24,26 +24,21 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  File? _image;
-  String? _recognizedDish;
   bool _loading = false;
-
   String _search = "";
-  List<String> randomFood = [];
-  List<String> searchResults = [];
-
-  final random = Random();
+  List<UserRecipe> _recipes = [];
 
   @override
   void initState() {
     super.initState();
+    _loadRecipes();
+  }
 
-    /// создаём ленту со случайными блюдами
-    randomFood = List.of(foodDatabase)..shuffle(random);
-    randomFood = randomFood.take(30).toList();
-
-    /// Поиск начинает отображать всю базу
-    searchResults = List.of(foodDatabase);
+  Future<void> _loadRecipes() async {
+    final loaded = RecipeStorageService.getAllRecipes();
+    setState(() {
+      _recipes = loaded;
+    });
   }
 
   Future<void> _pickAndAnalyzeImage() async {
@@ -56,48 +51,63 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
-      _image = File(picked.path);
+      final file = File(picked.path);
 
-      final label = await HFService.recognizeFood(_image!);
-      _recognizedDish = label;
+      // 1) распознаём метку блюда через HuggingFace
+      final label = await HFService.recognizeFood(file);
 
-      final recipeText = await AIService.getRecipeFromOpenAI(label);
+      // 2) используем AIService для генерации полного текста рецепта/описания
+      String recipeText = "";
+      try {
+        recipeText = await AIService.getRecipeFromOpenAI(label);
+      } catch (e) {
+        // если AIService недоступен, используем простую подпись
+        recipeText = "Рецепт для $label";
+      }
 
+      // 3) сформируем UserRecipe и сохраним
       final newRecipe = UserRecipe(
-        title: _recognizedDish ?? "Без названия",
-        description: recipeText ?? "",
+        title: label,
+        description: recipeText,
         ingredients: ["нет данных"],
         steps: ["нет данных"],
+        rating: 0.0,
+        imagePath: file.path,
       );
 
       await RecipeStorageService.addRecipe(newRecipe);
 
-    } catch (e) {
-      print("Ошибка: $e");
-    }
+      // Перезагрузим список
+      await _loadRecipes();
 
-    setState(() => _loading = false);
+      // Покажем уведомление
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Рецепт "$label" добавлен')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: $e')),
+        );
+      }
+    } finally {
+      setState(() => _loading = false);
+    }
   }
 
   void _searchFood(String query) {
     setState(() {
       _search = query.trim();
-
-      if (_search.isEmpty) {
-        searchResults = List.of(foodDatabase);
-      } else {
-        searchResults = foodDatabase
-            .where((food) =>
-            food.toLowerCase().contains(_search.toLowerCase()))
-            .toList();
-      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final listToShow =
-    _search.isEmpty ? randomFood : searchResults;
+    final filtered = _search.isEmpty
+        ? _recipes
+        : _recipes.where((r) => r.title.toLowerCase().contains(_search.toLowerCase())).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -107,7 +117,6 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.camera_alt_outlined),
             onPressed: _pickAndAnalyzeImage,
           ),
-
           PopupMenuButton(
             icon: const Icon(Icons.more_vert),
             itemBuilder: (context) => [
@@ -118,14 +127,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Duration(milliseconds: 100),
                         () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const IngredientsScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const IngredientsScreen()),
                     ),
                   );
                 },
               ),
-
               PopupMenuItem(
                 child: const Text("❤️ Анализ блюда"),
                 onTap: () {
@@ -133,14 +139,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Duration(milliseconds: 100),
                         () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const AnalyzeDishScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const AnalyzeDishScreen()),
                     ),
                   );
                 },
               ),
-
               PopupMenuItem(
                 child: const Text("➕ Добавить рецепт"),
                 onTap: () {
@@ -148,14 +151,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Duration(milliseconds: 100),
                         () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const AddRecipeScreen(),
-                      ),
-                    ),
+                      MaterialPageRoute(builder: (_) => const AddRecipeScreen()),
+                    ).then((_) => _loadRecipes()),
                   );
                 },
               ),
-
               PopupMenuItem(
                 child: const Text("📘 Мои рецепты"),
                 onTap: () {
@@ -163,14 +163,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Duration(milliseconds: 100),
                         () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const MyRecipesScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const MyRecipesScreen()),
                     ),
                   );
                 },
               ),
-
               PopupMenuItem(
                 child: const Text("⭐ Рейтинг рецептов"),
                 onTap: () {
@@ -180,9 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => RatingScreen(
-                          recipes: RecipeStorageService.getAllRecipes()
-                              .map((u) => u.toRecipe())
-                              .toList(),
+                          recipes: RecipeStorageService.getAllRecipes().map((u) => u.toRecipe()).toList(),
                         ),
                       ),
                     ),
@@ -193,7 +188,6 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         ],
       ),
-
       body: Column(
         children: [
           Padding(
@@ -212,32 +206,27 @@ class _HomeScreenState extends State<HomeScreen> {
               onChanged: _searchFood,
             ),
           ),
-
           if (_loading)
-            const Expanded(
-              child: Center(child: CircularProgressIndicator()),
+            const Expanded(child: Center(child: CircularProgressIndicator()))
+          else if (filtered.isEmpty)
+            Expanded(
+              child: Center(
+                child: Text(
+                  _recipes.isEmpty
+                      ? 'Список рецептов пуст. Нажми на иконку камеры чтобы добавить блюдо.'
+                      : 'По запросу "$_search" ничего не найдено.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
             )
           else
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.all(12),
-                itemCount: listToShow.length,
+                itemCount: filtered.length,
                 itemBuilder: (context, index) {
-                  final dish = listToShow[index];
-
-                  final recipe = UserRecipe(
-                    title: dish,
-                    description: "Вкусное блюдо: $dish",
-                    ingredients: ["Нет данных"],
-                    steps: ["Нет данных"],
-                  );
-
-                  return RecipeCardImage(
-                    recipe: recipe,
-                    title: recipe.title,
-                    imageUrl: "https://source.unsplash.com/featured/?${Uri.encodeComponent(recipe.title)}",
-                  );
-
+                  final recipe = filtered[index];
+                  return RecipeCardImage(recipe: recipe);
                 },
               ),
             ),
@@ -246,4 +235,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
