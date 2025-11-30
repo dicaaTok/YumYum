@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'add_recipe_screen.dart';
-import 'my_goal_screen.dart';
+import 'MyGoal/my_goal_screen.dart';
 import 'my_recipes_screen.dart';
 import 'rating_screen.dart';
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';             // твой главный экран
 import 'my_recipes_screen.dart';      // экран «Мои рецепты»
-import 'my_goal_screen.dart';         // экран «Моя цель»
+import 'MyGoal/my_goal_screen.dart';         // экран «Моя цель»
 import 'search_screen.dart';          // поиск, если был
 import 'profile_screen.dart';         // профиль, если был
 

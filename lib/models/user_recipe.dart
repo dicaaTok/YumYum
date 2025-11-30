@@ -32,6 +32,9 @@ class UserRecipe extends HiveObject {
   @HiveField(8)
   String? imageUrl;
 
+  @HiveField(9)
+  DateTime createdAt;
+
   UserRecipe({
     required this.title,
     required this.description,
@@ -42,7 +45,7 @@ class UserRecipe extends HiveObject {
     this.difficulty,
     this.time,
     this.imageUrl,
-  });
+  }): createdAt = DateTime.now();
 
   String get resolvedImage {
     if (imagePath != null && imagePath!.isNotEmpty) return imagePath!;
