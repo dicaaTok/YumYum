@@ -443,7 +443,7 @@ class _MyGoalScreenState extends State<MyGoalScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 12.0),
                     child: Row(
                       children: [
-                        Expanded(child: Text('Совет от ИИ', style: Theme.of(context).textTheme.subtitle1)),
+                        Expanded(child: Text('Совет от ИИ', style: Theme.of(context).textTheme.titleMedium)),
                         TextButton.icon(onPressed: _onGetAdvice, icon: const Icon(Icons.lightbulb_outline), label: const Text('Получить')),
                       ],
                     ),
@@ -548,11 +548,12 @@ class _SparklinePainter extends CustomPainter {
       }
       final t = (v - minV) / (maxV - minV);
       final y = h - t * (h - 8) - 4;
-      if (path.isEmpty) {
+      if (i == 0) {
         path.moveTo(x, y);
       } else {
         path.lineTo(x, y);
       }
+
     }
     canvas.drawPath(path, paintLine);
   }
