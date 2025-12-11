@@ -230,6 +230,7 @@ class AIService {
     return content.trim();
   }
 
+
   /// 🧩 Вспомогательная функция — извлечение чистого JSON
   static String _extractJson(String text) {
     final start = text.indexOf('[');

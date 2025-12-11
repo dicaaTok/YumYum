@@ -181,27 +181,6 @@ class _MyGoalScreenState extends State<MyGoalScreen> {
     return "Ответ ИИ: для достижения цели обратите внимание на размер порций, цель белка — 1.6 г/кг...";
   }
 
-  /// Example direct HuggingFace usage (if you want to call HF inference API from the app).
-  /// WARNING: embedding API key in app is insecure. Prefer server-side.
-  Future<String> _callHuggingFaceTextGeneration(String prompt) async {
-    const apiUrl = 'https://api-inference.huggingface.co/models/gpt2'; // example
-    const hfApiKey = 'REPLACE_WITH_SERVER_SIDE_KEY';
-    final res = await http.post(Uri.parse(apiUrl),
-        headers: {
-          'Authorization': 'Bearer $hfApiKey',
-          'Content-Type': 'application/json'
-        },
-        body: jsonEncode({'inputs': prompt}));
-    if (res.statusCode == 200) {
-      final j = jsonDecode(res.body);
-      // parse per model
-      if (j is Map && j['generated_text'] != null) return j['generated_text'];
-      if (j is List && j.isNotEmpty && j[0]['generated_text'] != null) return j[0]['generated_text'];
-      return res.body;
-    } else {
-      return 'Ошибка при запросе ИИ: ${res.statusCode}';
-    }
-  }
 
   /// ---------- UI helpers ----------
   List<DateTime> _buildWindowDates() {
@@ -423,11 +402,23 @@ class _MyGoalScreenState extends State<MyGoalScreen> {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      ElevatedButton.icon(onPressed: _saveGoal, icon: const Icon(Icons.save), label: const Text('Сохранить цель')),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _saveGoal,
+                          icon: const Icon(Icons.save),
+                          label: const Text('Сохранить цель'),
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      OutlinedButton.icon(onPressed: _addProgressEntry, icon: const Icon(Icons.add), label: const Text('Добавить запись прогресса')),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _addProgressEntry,
+                          icon: const Icon(Icons.add),
+                          label: const Text('Добавить запись прогресса'),
+                        ),
+                      ),
                     ],
-                  ),
+                  )
                 ],
               ),
             ),
