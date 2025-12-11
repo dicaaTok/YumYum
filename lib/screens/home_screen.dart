@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:yum_yum/screens/recipe_detail_screen.dart';
 
 import '../models/user_recipe.dart';
 import '../widgets/recipe_card_image.dart';
@@ -37,8 +38,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadRecipes() async {
     final loaded = RecipeStorageService.getAllRecipes();
     setState(() {
-      _recipes = loaded;
+      _recipes = loaded.reversed.toList();
     });
+
   }
 
   Future<void> _pickAndAnalyzeImage() async {
@@ -77,15 +79,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
       await RecipeStorageService.addRecipe(newRecipe);
 
-      // Перезагрузим список
+// Перезагрузим список
       await _loadRecipes();
 
-      // Покажем уведомление
+// Открываем экран рецепта сразу после фото
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Рецепт "$label" добавлен')),
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RecipeDetailScreen(recipe: newRecipe),
+          ),
         );
+        return;
       }
+
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
