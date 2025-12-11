@@ -18,7 +18,8 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
   @override
   void initState() {
     super.initState();
-    userRecipes = RecipeStorageService.getAllRecipes();
+
+    userRecipes = RecipeStorageService.getAllRecipes().reversed.toList();
   }
 
 
