@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/suggested_recipe.dart';
+import '../models/user_recipe.dart';
 
 class AIService {
   static const _endpoint = 'https://api.openai.com/v1/chat/completions';
@@ -245,5 +247,67 @@ class AIService {
     }
     return text;
   }
+  /// 📸 Генерация рецепта по фотографии блюда
+  static Future<UserRecipe> generateRecipeFromImage(String imagePath) async {
+    final apiKey = dotenv.env['OPENAI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('OPENAI_API_KEY не задан в .env');
+    }
+
+    final bytes = await File(imagePath).readAsBytes();
+    final base64Image = base64Encode(bytes);
+
+    final body = json.encode({
+      "model": _model,
+      "messages": [
+        {
+          "role": "system",
+          "content": "Ты — повар-ассистент. Определи блюдо по фотографии и создай рецепт."
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text":
+              "Распознай блюдо по изображению и создай рецепт с ингредиентами, шагами, пользой и калорийностью."
+            },
+            {
+              "type": "input_image",
+              "image_url": "data:image/jpeg;base64,$base64Image"
+            }
+          ]
+        }
+      ],
+      "max_tokens": 600
+    });
+
+    final res = await http.post(
+      Uri.parse(_endpoint),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $apiKey"
+      },
+      body: body,
+    );
+
+    if (res.statusCode != 200) {
+      throw Exception("OpenAI error: ${res.statusCode} ${res.body}");
+    }
+
+    final data = json.decode(res.body);
+    final content = data["choices"]?[0]?["message"]?["content"] ?? "Рецепт не найден";
+
+    // Создаем UserRecipe
+    return UserRecipe(
+      title: "Распознанное блюдо",
+      description: content,
+      ingredients: ["Не удалось извлечь"],
+      steps: ["Не удалось извлечь"],
+      rating: 0,
+      imagePath: imagePath,
+    );
+  }
+
 }
 
