@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:yum_yum/screens/profile_screen.dart';
 import 'home_screen.dart';
 import 'add_recipe_screen.dart';
 import 'MyGoal/my_goal_screen.dart';
@@ -20,6 +21,7 @@ class _MainScreenState extends State<MainScreen> {
     const AddRecipeScreen(),
     const MyRecipesScreen(),
     RatingScreen(recipes: const []),
+    ProfileScreen(),
   ];
 
   void _onTap(int index) {
@@ -59,6 +61,10 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.star_border),
             selectedIcon: Icon(Icons.star),
             label: 'Рейтинг',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person),
+            label: "Профиль",
           ),
         ],
       ),
