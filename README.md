@@ -178,14 +178,6 @@ User, Recipe, Ingredient, NutritionInfo, DishNearby, Order
 
 # 🧪 Как протестировать
 
-### 🔹 Запуск локально
-
-git clone https://github.com/dicaaTok/YumYum
-cd YumYum
-flutter pub get
-flutter run
-
-
 🔹 Установка APK
 
 Готовая сборка:
