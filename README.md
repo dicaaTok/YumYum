@@ -218,4 +218,4 @@ flutter run
 🔹 Установка APK
 
 Готовая сборка:
-👉 https://t.me/YumYum_APK/6
+👉 https://t.me/YumYum_APK/20
